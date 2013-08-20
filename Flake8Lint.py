@@ -11,9 +11,9 @@ import sublime
 import sublime_plugin
 
 try:
-    from .lint import lint, lint_external, skip_file
+    from .lint import lint, lint_external, skip_file, load_lint_config
 except ValueError:
-    from lint import lint, lint_external, skip_file  # noqa
+    from lint import lint, lint_external, skip_file, load_lint_config  # noqa
 
 
 settings = None
@@ -103,8 +103,11 @@ class Flake8LintCommand(sublime_plugin.TextCommand):
         # we need to always erase status too. same situations.
         self.view.erase_status('flake8-tip')
 
+        # get lint settings (respect global and local configs)
+        lint_settings = load_lint_config(filename, settings)
+
         # skip files by mask
-        ignore_files = settings.get('ignore_files')
+        ignore_files = lint_settings.get('ignore_files')
         if ignore_files:
             basename = os.path.basename(filename)
             try:
@@ -121,11 +124,11 @@ class Flake8LintCommand(sublime_plugin.TextCommand):
             self.view.run_command('save')
 
         # try to get interpreter
-        interpreter = settings.get('python_interpreter', 'auto')
+        interpreter = lint_settings.get('python_interpreter', 'auto')
 
         if not interpreter or interpreter == 'internal':
             # if interpreter is Sublime Text 2 internal python - lint file
-            self.errors_list = lint(filename, settings)
+            self.errors_list = lint(filename, lint_settings)
         else:
             # else - check interpreter
             if interpreter == 'auto':
@@ -154,26 +157,26 @@ class Flake8LintCommand(sublime_plugin.TextCommand):
                 )
 
             # and lint file in subprocess
-            self.errors_list = lint_external(filename, settings,
+            self.errors_list = lint_external(filename, lint_settings,
                                              interpreter, linter)
 
         # show errors
         if self.errors_list:
-            self.show_errors()
-        elif settings.get('report_on_success', False):
+            self.show_errors(lint_settings)
+        elif lint_settings.get('report_on_success', False):
             sublime.message_dialog('Flake8 Lint: SUCCESS')
 
-    def show_errors(self):
+    def show_errors(self, lint_settings):
         """
         Show all errors.
         """
         errors_to_show = []
 
         # get select and ignore settings
-        select = settings.get('select') or []
-        ignore = settings.get('ignore') or []
-        is_highlight = settings.get('highlight', False)
-        is_popup = settings.get('popup', True)
+        select = lint_settings.get('select') or []
+        ignore = lint_settings.get('ignore') or []
+        is_highlight = lint_settings.get('highlight', False)
+        is_popup = lint_settings.get('popup', True)
 
         regions = []
         view_errors = {}
@@ -244,7 +247,7 @@ class Flake8LintCommand(sublime_plugin.TextCommand):
 
         # highlight error regions if defined
         if is_highlight:
-            mark = settings.get('gutter_marks', '')
+            mark = lint_settings.get('gutter_marks', '')
             self.view.add_regions('flake8-errors', regions,
                                   'invalid.deprecated', mark,
                                   sublime.DRAW_OUTLINED)

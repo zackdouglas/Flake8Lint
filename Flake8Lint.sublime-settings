@@ -37,6 +37,12 @@
 	// turn off complexity check (set number > 0 to check complexity level)
 	"complexity": -1,
 
+	// load global flake8 config from "~/.config/flake8"
+	"use_global_config": true,
+
+	// load per-project config (i.e. "tox.ini", "setup.cfg" and ".pep8" files)
+	"use_project_config": true,
+
 	// set desired max line length
 	"pep8_max_line_length": 79,
 

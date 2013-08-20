@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'contrib'))
 import pyflakes.api
 import mccabe
 import pep8
-from flake8.engine import _flake8_noqa
+from flake8.engine import _flake8_noqa, get_style_guide
 
 # Monkey-patching is a big evil (don't do this),
 # but hardcode is a much more bigger evil. Hate hardcore!
@@ -25,6 +25,16 @@ mccabe.get_code_complexity = get_code_complexity
 
 from flake8._pyflakes import patch_pyflakes
 patch_pyflakes()
+
+
+if sys.platform.startswith('win'):
+    DEFAULT_CONFIG = os.path.expanduser(r'~\.flake8')
+else:
+    DEFAULT_CONFIG = os.path.join(
+        os.getenv('XDG_CONFIG_HOME') or os.path.expanduser('~/.config'),
+        'flake8'
+    )
+PROJECT_CONFIG = ('setup.cfg', 'tox.ini', '.pep8')
 
 
 def skip_file(path):
@@ -98,6 +108,47 @@ class FlakesReporter(object):
         # unused import has no col attr, seems buggy... this fixes it
         col = getattr(msg, 'col', 0)
         self.errors.append((msg.lineno, col, msg.message % msg.message_args))
+
+
+def load_lint_config(filename, settings):
+    """
+    Load flake8 settings from config file.
+    More info: http://flake8.readthedocs.org/en/latest/config.html
+
+    If no config file is found, use default settings.
+    """
+    config_file = None
+
+    # search config in filename dir and all parent dirs
+    if settings.get('use_project_config', True):
+        parent = tail = os.path.abspath(filename)
+        while tail:
+            for fn in PROJECT_CONFIG:
+                check_file = os.path.join(parent, fn)
+                if os.path.isfile(check_file):
+                    config_file = check_file
+                    break
+            if config_file:
+                break
+            parent, tail = os.path.split(parent)
+
+    # check global config also
+    if not config_file and settings.get('use_global_config', True):
+        config_file = DEFAULT_CONFIG
+
+    if config_file and os.path.isfile(config_file):
+        print("Use config file:", config_file)
+
+        # some magic (oops, monkey_patching again)
+        pep8.DEFAULT_CONFIG = config_file
+        flake8_style = get_style_guide(config_file=True)
+
+        settings.set('ignore', flake8_style.options.ignore)
+        settings.set('select', flake8_style.options.select)
+        settings.set('pep8_max_line_length',
+                     flake8_style.options.max_line_length)
+
+    return settings
 
 
 def lint(filename, settings):

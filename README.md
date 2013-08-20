@@ -46,10 +46,10 @@ The "Packages" directory is located at:
         %APPDATA%/Sublime Text 2/Packages/
 
 
-Config
-------
+Plugin config
+-------------
 
-Default Python Flake8 Lint config: "Preferences" -> "Package Settings" -> "Python Flake8 Lint" -> "Settings - Default"
+Default 'Python Flake8 Lint' config: "Preferences" -> "Package Settings" -> "Python Flake8 Lint" -> "Settings - Default"
 
 	{
 		// run flake8 lint on file saving
@@ -90,6 +90,12 @@ Default Python Flake8 Lint config: "Preferences" -> "Package Settings" -> "Pytho
 		// turn off complexity check (set number > 0 to check complexity level)
 		"complexity": -1,
 
+		// load global flake8 config from "~/.config/flake8"
+		"use_global_config": true,
+
+		// load per-project config (i.e. "tox.ini", "setup.cfg" and ".pep8" files)
+		"use_project_config": true,
+
 		// set desired max line length
 		"pep8_max_line_length": 79,
 
@@ -103,6 +109,31 @@ Default Python Flake8 Lint config: "Preferences" -> "Package Settings" -> "Pytho
 	}
 
 To change default settings, go to "Preferences" -> "Package Settings" -> "Python Flake8 Lint" -> "Settings - User" and paste default config to the opened file and make your changes.
+
+
+Flake8 config
+-------------
+
+"Python Flake8 Lint" plugin will load config in this order:
+
+1. Sublime Text 'Flake8Lint' plugin settings
+2. Global flake8 settings (see also: [Flake8 docs: global config](http://flake8.readthedocs.org/en/latest/config.html#global)):
+    - ~/.config/flake8
+3. Project settings (see also: [Flake8 docs: per-project config](http://flake8.readthedocs.org/en/latest/config.html#per-project)):
+    - tox.ini
+    - setup.cfg
+    - .pep8
+
+Config options is not inherited. For example:
+
+- if user have project settings in '.pep8' file, all other settings will be ignored
+- if user have global settings in ~/.config/flake8, all other settings will be ignored
+- if user have no settings file (global or project), "Python Flake8 Lint" settings will be used.
+
+There are "Python Flake8 Lint" plugin options to control flake8 configs:
+
+- "**use_global_config**" option is used to enable or disable global flake8 config (i.e. "~/.config/flake8" file)
+- "**use_project_config**" option is used to enable or disable local (project) config (i.e. "tox.ini", "setup.cfg" and ".pep8" files)
 
 
 Note
