@@ -278,12 +278,16 @@ class Flake8LintCommand(sublime_plugin.TextCommand):
             full_line_text = self.view.substr(line)
             line_text = full_line_text.strip()
 
+            # parse error line to get error code
+            code, _ = error_text.split(' ', 1)
+
             # skip line if 'noqa' defined
             if skip_line(line_text):
                 continue
-
-            # parse error line to get error code
-            code, _ = error_text.split(' ', 1)
+            
+            # skip line if ignored pylint style
+            if ('disable=%s' % code) in line_text:
+                continue
 
             # check if user has a setting for select only errors to show
             if select and not [c for c in select if code.startswith(c)]:
